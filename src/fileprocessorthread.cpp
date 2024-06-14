@@ -60,7 +60,6 @@ void FileProcessorThread::run() {
 
   QTextStream in(file_);
   qint64 total_size = file_->size();
-  qint64 processed_size = 0;
 
   while (!in.atEnd() && !cancelled_) {
     {
@@ -80,15 +79,15 @@ void FileProcessorThread::run() {
 
     static QRegularExpression reg_exp("\\W+");
 
-    QString line = in.readLine();
+    QString line = in.readLine().toLower();
     QStringList words = line.split(reg_exp, Qt::SkipEmptyParts);
-    for (const QString& word : words) {
-      const auto word_lower = word.toLower();
-      word_count_[word_lower]++;
-      updateTopWords(word_lower);
+    for (const auto& word : words) {
+      word_count_[word]++;
+      updateTopWords(word);
     }
-    processed_size = in.pos();
-    progress_ = static_cast<double>(processed_size) / total_size;
+
+    const auto remains = file_->bytesAvailable();
+    progress_ = static_cast<double>((total_size - remains)) / total_size;
 
     emit wordCountChanged(word_counts_v_);
     emit progressChanged(progress_);
